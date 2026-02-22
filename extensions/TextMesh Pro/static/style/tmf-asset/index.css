@@ -1,0 +1,67 @@
+#text {
+    color: var(--color-normal-contrast-weakest);
+    margin: auto;
+    width: 180px;
+}
+.counter {
+    text-align: center;
+}
+
+.curve {
+    height: 25px;
+}
+
+.container {   
+    margin: 0 5%; 
+    width: 90%;
+}
+
+.row {
+    width: 100%;
+    height: 30px;
+}
+
+.withDragProp {
+    margin-top: 8px;
+}
+
+.row .title {
+    width: 30%;
+    float: left;
+    line-height: 30px;
+}
+
+.row .header {
+    width: 30%;
+    float: left;
+}
+
+.row .prop {
+    width: 70%;
+    float: left;
+}
+
+.row .prop-l-h {
+    width: 35%;
+    float: left;
+}
+
+.row .prop-h {
+    width: 35%;
+    float: left;
+}
+
+.preview {
+    width: 100%; 
+    height: 100%; 
+    object-fit: contain;
+}
+
+.preview .char {
+    width: 100px;
+}
+
+.char-selector {
+    position: absolute;
+    border: 2px solid #e23010c0;
+}

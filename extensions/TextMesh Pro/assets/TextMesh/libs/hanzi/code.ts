@@ -1,0 +1,11 @@
+export const DIANHAO = `。，、．：；！‼？⁇ .,;:~\`?!`;
+export const BIAOHAO = `「」『』“”‘’（）()【】〖〗〔〕［］｛｝⸺—…●•–～~～～·﹏《》〈〉＿/／\\ {}[]()<>"'`;
+export const BIAODIAN = `${BIAOHAO}${DIANHAO} `;
+export const BIAODIANVALIDATEND = `。，、．：；！‼？⁇」』”’）】〗〕］｝》〉 .,)!;]}'>"?`
+export const BIAODIANVALIDATSTART = `「『“‘（【〖〔［｛《〈 ({['"<`
+export const INCOMPRESSIBLE = '‼⁇⸺—';
+export const COMPRESSLEFT = '「『“‘（【〖〔［｛《〈 ({[\'"<';
+export const ALLBIAODIAN = [...BIAODIAN, ...BIAODIANVALIDATEND];
+export const LINEBREAKING = " )]｝〕〉》」』】〙〗〟’”｠»ヽヾーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎゕゖㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ々〻‐゠–〜?!‼⁇⁈⁉・、%,.:;。！？］）：；＝}¢°\"†‡℃〆％，．";
+export const LINELEADING = "([｛〔〈《「『【〘〖〝‘“｟«$—…‥〳〴〵\［（{£¥\"々〇＄￥￦#";
+export const NOTBREAKING = ".";

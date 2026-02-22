@@ -1,0 +1,118 @@
+// --- TextMesh SDF Fragment Shader (Alpha 修正版) ---
+
+#extension GL_OES_standard_derivatives: enable
+precision highp float;
+
+#include <builtin/internal/embedded-alpha>
+#include <builtin/internal/alpha-test>
+#include <common/common-define>
+#include <cc-global>
+
+in vec4 color;
+in float channelId;
+in float fill;
+in float stroke;
+in float strokeBlur;
+in vec4 strokeColor;
+in float strokeEnable;
+in vec4 uvs;
+in float isShadow;
+
+#pragma builtin(local)
+uniform sampler2D cc_spriteTexture;
+
+uniform FontUniforms {
+  float fontSmoothness;
+};
+
+#if USE_OVERLAY_TEXTURE
+  uniform sampler2D overlayTexture;
+#endif
+
+#if USE_GLOW
+  uniform Glow {
+    vec4 glowColor;
+    vec2 glowOffset;
+    float glowInner;
+    float glowOuter;
+    float glowPower;
+  };
+#endif
+
+vec4 getChannelMask() {
+  if(channelId <= 0.1) { return vec4(1, 0, 0, 0); }
+  else if(channelId <= 1.1) { return vec4(0, 1, 0, 0); }
+  else if(channelId <= 2.1) { return vec4(0, 0, 1, 0); }
+  else { return vec4(0, 0, 0, 1); }
+}
+
+vec4 outerGlow(float dist, vec4 glowColor, float radius, float glowPower) {
+  float d = fill - dist;
+  float a_f = clamp(1.0 - d / radius, 0.0, 1.0) * step(0.0, d);
+  float b_f = pow(a_f, glowPower);
+  return glowColor * b_f;
+}
+
+vec4 innerGlow(float dist, vec4 glowColor, float radius, float glowPower) {
+  float d = dist - fill;
+  float a_f = clamp(1.0 - d / radius, 0.0, 1.0) * step(0.0, d);
+  float b_f = pow(a_f, glowPower);
+  return glowColor * b_f;
+}
+
+vec4 frag () {
+  vec4 channelMask = getChannelMask();
+  float dist = dot(channelMask, CCSampleWithAlphaSeparated(cc_spriteTexture, uvs.xy));
+  float screenPixelRange = fwidth(dist);
+  float baseAntialiasWidth = screenPixelRange * 0.5;
+  float fontAntialiasWidth = baseAntialiasWidth + fontSmoothness;
+  float strokeAntialiasWidth = fontAntialiasWidth + strokeBlur;
+
+  float clipValue = step(0.01, uvs.z) * step(uvs.z, 0.99) * step(0.01, uvs.w) * step(uvs.w, 0.99);
+  vec4 finalOut = vec4(0.0);
+
+  #if IS_SHADOW_PASS
+    if (isShadow < 0.5) discard;
+    float shadowAlpha = smoothstep(stroke - strokeAntialiasWidth, stroke + strokeAntialiasWidth, dist);
+    finalOut = color;
+    finalOut.a *= shadowAlpha;
+  #elif IS_GLOW_PASS
+    if (isShadow > 0.5) discard;
+    #if USE_GLOW
+      vec2 offsetUv = uvs.xy - glowOffset / cc_nativeSize.xy;
+      float glowDist = dot(channelMask, CCSampleWithAlphaSeparated(cc_spriteTexture, offsetUv));
+      vec4 outGlowCol = outerGlow(glowDist, glowColor, glowOuter, glowPower + 0.0001);
+      vec4 inGlowCol = innerGlow(glowDist, glowColor, glowInner, glowPower + 0.0001);
+      finalOut = (outGlowCol + inGlowCol) * color.a;
+    #else
+      discard;
+    #endif
+
+  #else
+    if (isShadow > 0.5) discard;
+
+    // 1. 描邊處理
+    float totalAlpha = smoothstep(stroke - strokeAntialiasWidth, stroke + strokeAntialiasWidth, dist);
+
+    // 【核心修正】移除權重中的 strokeColor.a，避免 Alpha 被平方 (0.5 * 0.5 = 0.25)
+    // 現在：mix(0, strokeColor(a=0.5), factor) => 結果 Alpha 為 0.5 * factor (線性正確)
+    finalOut = mix(finalOut, strokeColor, totalAlpha * strokeEnable);
+
+    // 2. 文字主體處理
+    vec4 textColor = color;
+    #if USE_OVERLAY_TEXTURE
+      textColor.rgb *= CCSampleWithAlphaSeparated(overlayTexture, uvs.zw).rgb;
+    #endif
+    float fillAlpha = smoothstep(fill - fontAntialiasWidth, fill + fontAntialiasWidth, dist);
+    finalOut = mix(finalOut, textColor, fillAlpha);
+  #endif
+
+  #if IS_GRAY
+    float gray = 0.2126 * finalOut.r + 0.7152 * finalOut.g + 0.0722 * finalOut.b;
+    finalOut.r = finalOut.g = finalOut.b = gray;
+  #endif
+
+  ALPHA_TEST(finalOut);
+  finalOut.a *= clipValue;
+  return finalOut;
+}

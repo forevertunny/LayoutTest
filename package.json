@@ -1,0 +1,10 @@
+{
+  "name": "LayoutTest",
+  "uuid": "e1855cb9-a06d-4e64-be26-3debe523478e",
+  "dependencies": {
+    "lru-cache": "7.10.1"
+  },
+  "creator": {
+    "version": "3.8.7"
+  }
+}

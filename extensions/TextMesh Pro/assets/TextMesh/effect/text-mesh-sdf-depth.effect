@@ -1,0 +1,27 @@
+// Copyright (c) 2017-2020 Xiamen Yaji Software Co., Ltd.
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: text-mesh-sdf-vs:vert
+      frag: text-mesh-sdf-fs:frag
+      depthStencilState:
+        depthTest: true
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendSrcAlpha: src_alpha
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState:
+        cullMode: none
+      properties:
+        overlayTexture:  { value: white, editor: { parent: USE_OVERLAY_TEXTURE } }
+        alphaThreshold: { value: 0.5 }
+
+        glowColor: { value: [0, 1, 0, 1],  editor: { type: color, parent: USE_GLOW } }
+        glowInner: { value: 0.5, range:[0, 1, 0.01],  editor: { parent: USE_GLOW }  }
+        glowOuter: { value: 0.5, range:[0, 1, 0.01],  editor: { parent: USE_GLOW }  }
+        glowPower: { value: 1.5, range:[0, 1, 0.01],  editor: { parent: USE_GLOW }  }
+}%

@@ -1,0 +1,137 @@
+{
+  "package_version": 2,
+  "version": "2.0.3",
+  "name": "text-mesh",
+  "description": "i18n:text-mesh.description",
+  "main": "./dist/main.js",
+  "type": "module",
+  "panels": {
+    "default": {
+      "title": "test-planel Default Panel",
+      "type": "dockable",
+      "main": "dist/panels/default",
+      "size": {
+        "min-width": 100,
+        "min-height": 200,
+        "width": 1024,
+        "height": 600
+      }
+    },
+    "create-font": {
+      "title": "i18n:text-mesh.font_info.name",
+      "type": "dockable",
+      "main": "dist/panels/create-font",
+      "size": {
+        "min-width": 100,
+        "min-height": 200,
+        "width": 500,
+        "height": 600
+      }
+    }
+  },
+  "contributions": {
+    "menu": [
+      {
+        "path": "i18n:menu.extension/i18n:text-mesh.name",
+        "label": "i18n:text-mesh.font_info.name",
+        "message": "textmesh:open-create-font-panel"
+      },
+      {
+        "path": "i18n:menu.extension/i18n:text-mesh.name",
+        "label": "Label",
+        "message": "textmesh:create-label"
+      },
+      {
+        "path": "i18n:menu.extension/i18n:text-mesh.name",
+        "label": "Button",
+        "message": "textmesh:create-button"
+      },
+      {
+        "path": "i18n:menu.extension/i18n:text-mesh.name",
+        "label": "Label3D",
+        "message": "textmesh:create-label3d"
+      },
+      {
+        "path": "i18n:menu.extension/i18n:text-mesh.name",
+        "label": "i18n:text-mesh.install_sample",
+        "message": "textmesh:install_sample"
+      }
+    ],
+    "scene": {
+      "script": "./dist/scene.js"
+    },
+    "inspector": {
+      "section": {
+        "asset": {
+          "tmf": "./dist/inspector/tmf-asset.js",
+          "buffer": "./dist/inspector/tmf-text-asset.js"
+        }
+      }
+    },
+    "messages": {
+      "selection:select": {
+        "methods": [
+          "selected"
+        ]
+      },
+      "dynamic-bone:install": {
+        "methods": []
+      },
+      "dynamic-bone:install_sample": {
+        "methods": []
+      },
+      "textmesh:tmf-refresh": {
+        "public": true,
+        "description": "tmf changed."
+      },
+      "textmesh:open-create-font-panel": {
+        "methods": [
+          "openCreateFontPanel"
+        ]
+      },
+      "textmesh:create-label": {
+        "methods": [
+          "createLabel"
+        ]
+      },
+      "textmesh:create-button": {
+        "methods": [
+          "createButton"
+        ]
+      },
+      "textmesh:create-label3d": {
+        "methods": [
+          "createLabel3D"
+        ]
+      },
+      "textmesh:install_sample": {
+        "methods": [
+          "installSample"
+        ]
+      }
+    },
+    "asset-db": {
+      "mount": {
+        "path": "./assets/TextMesh",
+        "readonly": true
+      }
+    }
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.13",
+    "@types/node": "^16.0.1",
+    "typescript": "^4.3.4"
+  },
+  "author": "wing",
+  "editor": ">=3.4.2",
+  "scripts": {
+    "build": "tsc -b",
+    "watch": "tsc -w"
+  },
+  "dependencies": {
+    "fs-extra": "^10.0.0",
+    "maxrects-packer": "^2.7.3",
+    "vue": "^3.2.37"
+  },
+  "_storeId": "7ae164b97972825637187014242cdcb4"
+}

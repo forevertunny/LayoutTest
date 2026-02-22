@@ -1,0 +1,83 @@
+<div>
+    <div id="app" class="container">   
+        <ui-label class="row" :value="error" v-show="!!error"></ui-label>     
+        <div class="row withDragProp">               
+            <ui-label value="i18n:text-mesh.font_info.source_font" class="title"></ui-label>
+            <div>
+                <ui-select class="prop-h" value="1" @confirm="model.usesystem_font = $event.target.value == 2">
+                    <option key="1" value="1">{{I18N('text-mesh.font_info.custom_font')}}</option>
+                    <option key="2" value="2">{{I18N('text-mesh.font_info.system_font')}}</option>
+                </ui-select>
+                <ui-asset droppable="cc.TTFFont" ref="fontAsset" class="prop-h" @confirm="onTTFChanged($event.target.value)" v-if="!model.usesystem_font"></ui-asset>
+                <ui-input ref="fontFamily" :placeholder="model.fontFamily" class="prop-h" :value="model.fontFamily" v-else="model.usesystem_font"></ui-input>
+            </div>
+        </div>
+        <div class="row">    
+            <ui-label value="i18n:text-mesh.font_info.gen_font_size" class="title"></ui-label>           
+            <ui-select class="header" :value="auto_font_size?1:2" :style="{ width: (auto_font_size ? '70%' : '30%') }" @confirm="optFontSize = $event.target.value">
+                <option key="1" value="1">{{I18N('text-mesh.font_info.auto_font_size')}}</option>
+                <option key="2" value="2">{{I18N('text-mesh.font_info.custom_font_size')}}</option>
+            </ui-select>
+            <ui-num-input step="1" min="10" class="prop" style="width: 40%;" v-show="!auto_font_size" v-model="model.fontSize"></ui-num-input>
+        </div>
+        <div class="row">               
+            <ui-label value="i18n:text-mesh.font_info.padding" class="title"></ui-label>
+            <ui-num-input step="1" min="1" class="prop" v-model="model.padding" v-if="optPaddingMode == 1"></ui-num-input> 
+        </div>
+        <!-- <div class="row">               
+            <ui-label value="i18n:text-mesh.font_info.padding_trim" class="title"></ui-label>
+            <ui-checkbox :value="model.padTrim" @confirm="onPadTrimChanged($event.target.value)"></ui-checkbox>
+        </div> -->
+        <div class="row">               
+            <ui-label value="i18n:text-mesh.font_info.atlas_size" class="title"></ui-label>
+            <ui-select class="prop-l-h" :value="model.atlasWidth"  @confirm="model.atlasWidth = $event.target.value">
+                <option
+                    v-for="(item, index) in sizeOptions"
+                        :key="item"
+                        :label="item"
+                        :value="item">
+                    {{ item }}
+                </option>
+            </ui-select>
+            <ui-select class="prop-h" :value="model.atlasHeight"  @confirm="model.atlasHeight = $event.target.value">
+                <option
+                    v-for="(item, index) in sizeOptions"
+                        :key="item"
+                        :label="item"
+                        :value="item">
+                    {{ item }}
+                </option>
+            </ui-select>
+        </div>
+        <div class="row" v-show="!model.usesystem_font">               
+            <ui-label value="i18n:text-mesh.font_info.enable_dynamic" class="title"></ui-label>
+            <ui-checkbox :value="model.dynamic" @confirm="onDynamicChanged($event.target.value)"></ui-checkbox>
+        </div>
+        <div class="row" v-show="!model.usesystem_font">               
+            <ui-label value="i18n:text-mesh.font_info.static_channel_size" class="title"></ui-label>
+            <ui-select class="prop" :value="model.staticChannelCount"  @confirm="model.staticChannelCount = parseInt($event.target.value)">
+                <option
+                    v-for="(item, index) in channelSizeOptions"
+                        :key="item"
+                        :label="item"
+                        :value=item>
+                    {{ item }}
+                </option>
+            </ui-select>
+        </div>
+        <div class="row withDragProp">               
+            <ui-label value="i18n:text-mesh.font_info.charset" class="title"></ui-label>
+            <ui-asset droppable="cc.TextAsset" class="prop" :value="model.charset" @confirm="model.charset = $event.target.value"></ui-asset>
+        </div>
+        <div class="row withDragProp">               
+            <ui-label value="i18n:text-mesh.font_info.tmf_font_file" class="title"></ui-label>
+            <ui-asset ref="fontFile"  droppable="cc.BufferAsset" class="prop" @confirm="onFontFileChanged($event.target.value)"></ui-asset>
+        </div>
+        <div class="row">               
+            <ui-button class="row" @confirm="generateFont">{{inGenerating ? I18N('text-mesh.font_info.end_gen') : I18N('text-mesh.font_info.begin_gen') }}</ui-button>
+        </div>
+        <div class="row" style="margin-top: -12px;" v-show="inGenerating">
+            <ui-progress class="row" style="height: 5px;" :value="progress"></ui-progress>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,43 @@
+CCEffect %{
+  techniques:
+  - passes:
+    # Pass 0: 現在改為光暈 (Glow) - 必須在這裡定義錨點 (&)
+    - vert: text-mesh-sdf-vs:vert
+      frag: text-mesh-sdf-fs:frag
+      depthStencilState: &d1
+        depthTest: false
+        depthWrite: false
+      blendState: &b1
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendSrcAlpha: src_alpha
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState: &r1
+        cullMode: none
+      defines: { IS_GLOW_PASS: true }
+
+    # Pass 1: 現在改為陰影 (Shadow) - 使用別名 (*)
+    - vert: text-mesh-sdf-vs:vert
+      frag: text-mesh-sdf-fs:frag
+      depthStencilState: *d1
+      blendState: *b1
+      rasterizerState: *r1
+      defines: { IS_SHADOW_PASS: true }
+
+    # Pass 2: 渲染主體 (Stroke -> Text) - 最上層
+    - vert: text-mesh-sdf-vs:vert
+      frag: text-mesh-sdf-fs:frag
+      depthStencilState: *d1
+      blendState: *b1
+      rasterizerState: *r1
+      properties: &props
+        fontSmoothness: { value: 0.1, range:[0, 1, 0.01], editor: { tooltip: '字體邊緣柔和度' } }
+        overlayTexture:  { value: white, editor: { parent: USE_OVERLAY_TEXTURE } }
+        glowColor: { value: [0, 1, 0, 1],  editor: { type: color, parent: USE_GLOW } }
+        glowInner: { value: 0.5, range:[0, 1, 0.01],  editor: { parent: USE_GLOW }  }
+        glowOuter: { value: 0.5, range:[0, 1, 0.01],  editor: { parent: USE_GLOW }  }
+        glowPower: { value: 1.5, range:[0, 1, 0.01],  editor: { parent: USE_GLOW }  }
+        glowOffset: { value: [0, 0], editor: { parent: USE_GLOW } }
+}%

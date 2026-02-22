@@ -1,0 +1,71 @@
+precision highp float;
+
+#include <builtin/uniforms/cc-global>
+#if USE_LOCAL
+  #include <builtin/uniforms/cc-local>
+#endif
+#if SAMPLE_FROM_RT
+  #include <common/common-define>
+#endif
+
+// IN (從 Assembler 傳入的頂點屬性)
+in vec3 a_position;
+in vec2 a_texCoord;
+in vec2 a_texCoord1;
+in vec4 a_color;
+in vec2 a_texCoord2;
+in vec2 a_texCoord3;
+in vec2 a_strokeColor0;
+in vec2 a_strokeColor1;
+
+// OUT (傳遞給片元著色器的變數)
+out vec4 color;
+out vec4 uvs;
+out float channelId;
+out float fill;
+out float stroke;
+out float strokeBlur;
+out vec4 strokeColor;
+out float strokeEnable;
+out float isShadow;
+
+vec4 vert () {
+  vec4 pos = vec4(a_position, 1);
+
+  #if USE_LOCAL
+    pos = cc_matWorld * pos;
+  #endif
+
+  #if USE_PIXEL_ALIGNMENT
+    pos = cc_matView * pos;
+    pos.xyz = floor(pos.xyz);
+    pos = cc_matProj * pos;
+  #else
+    pos = cc_matViewProj * pos;
+  #endif
+
+  uvs = vec4(a_texCoord, a_texCoord1);
+  color = a_color;
+  channelId = a_texCoord2.x;
+  fill = 1.0 - a_texCoord2.y;
+  strokeBlur = a_texCoord3.y;
+
+  // 【核心修正】調整 stroke (描邊/陰影寬度) 的計算公式
+  // 舊公式: stroke = fill - fill * a_texCoord3.x; (當 fill=1 時，a_texCoord3.x 越大，stroke 越小，不符合直覺)
+  // 新公式: stroke = fill - a_texCoord3.x;
+  // 這樣，a_texCoord3.x (即 shadow value) 越大，stroke 和 fill 的距離就越大，陰影範圍也就越大。
+  stroke = fill - a_texCoord3.x;
+
+  // 從 a_strokeColor1 的 y 通道讀取 "是否為陰影" 的標記
+  // 【核心修正】使用 step 函數確保 isShadow 的值為 0.0 或 1.0，增加穩健性
+  isShadow = step(1.0, a_strokeColor1.y); // 當 a_strokeColor1.y >= 1.0 時，結果為 1.0，否則為 0.0
+  float strokeAlpha = fract(a_strokeColor1.y); // 小數部分是描邊的 alpha
+
+  // 重新組合描邊顏色，並確保 alpha 為 1.0
+  // 【核心修正】使用傳遞過來的 strokeAlpha
+  strokeColor = vec4(a_strokeColor0.x, a_strokeColor0.y, a_strokeColor1.x, strokeAlpha);
+
+  strokeEnable = step(0.001, a_texCoord3.x);
+
+  return pos;
+}

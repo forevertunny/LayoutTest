@@ -1,0 +1,14 @@
+{
+  "name": "project",
+  "uuid": "f7dfacd9-2987-4ce1-87d6-95881f8c99de",
+  "version": "3.4.2",
+  "creator": {
+    "version": "3.4.2"
+  },
+  "dependencies": {
+    "lru-cache": "^7.10.1"
+  },
+  "scripts": {
+    "build": "tsc"
+  }
+}

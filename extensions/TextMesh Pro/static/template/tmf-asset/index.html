@@ -1,0 +1,117 @@
+<div slot="content">
+    <div id="app" class="container">
+        <div class="row">               
+            <ui-button class="row" @confirm="modifyTMF">{{I18N('text-mesh.settings.reCalc')}}</ui-button>
+        </div>
+        <ui-section class="config" header="i18n:text-mesh.font_info.base_info" expand>
+            <div class="row withDragProp">               
+                <ui-label value="i18n:text-mesh.font_info.source_font" class="title"></ui-label>
+                <!-- <ui-asset readonly droppable="cc.TTFFont" ref="fontAsset" class="prop" @confirm="model.font = $event.target.value" :hidden="model.usesystem_font"></ui-asset> -->
+                <ui-asset readonly droppable="cc.TTFFont" ref="fontAsset" class="prop" @confirm="model.font = $event.target.Value" v-if="!model.usesystem_font"></ui-asset>
+                <ui-input :placeholder="model.fontFamily" class="prop-h" :value="model.fontFamily" v-else="model.usesystem_font"></ui-input>
+            </div>
+            <div class="row">    
+                <ui-label value="i18n:text-mesh.font_info.gen_font_size" class="title"></ui-label>    
+                <ui-input readonly placeholder="name" class="prop" v-model="model.fontSize"></ui-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.font_info.padding" class="title"></ui-label>
+                <ui-input readonly class="prop" v-model="model.padding"></ui-asset> 
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.font_info.atlas_size" class="title"></ui-label>
+                <ui-input readonly class="header prop-h" :value="model.atlasWidth" ></ui-input>
+                <ui-input readonly class="header prop-h" :value="model.atlasHeight" ></ui-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.font_info.enable_dynamic" class="title"></ui-label>
+                <ui-checkbox readonly :value="model.dynamic"></ui-checkbox>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.font_info.static_channel_size" class="title"></ui-label>
+                <ui-input readonly class="prop" :value="model.staticChannelCount"></ui-input>
+            </div>
+            <div class="row withDragProp">               
+                <ui-label value="i18n:text-mesh.font_info.charset" class="title"></ui-label>
+                <ui-asset readonly droppable="cc.TextAsset" class="prop" :value="model.charset"></ui-asset> 
+            </div>
+        </ui-section>      
+        <ui-section class="config" header="i18n:text-mesh.settings.name" expand>
+            <div class="row">
+                <ui-label value="i18n:text-mesh.settings.enableAutoFree" class="title"></ui-label>
+                <ui-checkbox class="prop" v-model="model.enableAutoFree" @confirm="onEnableAutoFree($event.target.Value)"></ui-checkbox>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.offsetY" class="title"></ui-label>
+                <ui-input class="prop" v-model="model.offsetY"></ui-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.normalWeight" class="title"></ui-label>
+                <ui-num-input class="prop" v-model="model.normalWeight"></ui-num-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.boldWeightScale" class="title"></ui-label>
+                <ui-num-input class="prop" v-model="model.boldWeightScale"></ui-num-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.strokeScale" class="title"></ui-label>
+                <ui-num-input class="prop" v-model="model.strokeScale"></ui-num-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.strokeBlur" class="title"></ui-label>
+                <ui-num-input class="prop" v-model="model.strokeBlur"></ui-num-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.shadowSize" class="title"></ui-label>
+                <ui-num-input class="prop" v-model="model.shadowSize"></ui-num-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.shadowBlur" class="title"></ui-label>
+                <ui-num-input class="prop" v-model="model.shadowBlur"></ui-num-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.underLineOffset" class="title"></ui-label>
+                <ui-num-input class="prop" v-model="model.underLineOffset"></ui-num-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.keepUnlderLineSpace" class="title"></ui-label>
+                <ui-checkbox class="prop" :value="model.keepUnlderLineSpace" @confirm="onKeepUpderlineSpace($event.target.Value)"></ui-checkbox>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.underLineThickness" class="title"></ui-label>
+                <ui-num-input class="prop" v-model="model.underLineThickness"></ui-num-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.strikeOffset" class="title"></ui-label>
+                <ui-num-input class="prop" v-model="model.strikeOffset"></ui-num-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.strikeThickness" class="title"></ui-label>
+                <ui-num-input class="prop" v-model="model.strikeThickness"></ui-num-input>
+            </div>
+            <div class="row">               
+                <ui-label value="i18n:text-mesh.settings.scriptThickness" class="title"></ui-label>
+                <ui-num-input class="prop" v-model="model.scriptThickness"></ui-num-input>
+            </div>
+            <div class="row">               
+                <ui-button class="row" @confirm="saveTMF">{{I18N('text-mesh.settings.save')}}</ui-button>
+            </div>
+        </ui-section>  
+        <ui-section class="config" header="i18n:text-mesh.font_info.atlas_info" expand v-show="model.staticChannelCount > 0">
+            <ui-tab :value="currentChannelID"  @confirm="onChannelClick($event.target.Value)">
+                <ui-button v-for="item in channels" :tabindex="item">
+                    {{item}}
+                </ui-button>
+            </ui-tab>
+            <div style="position: relative;">
+                <img class="preview" ref="preview" :src="currentChannelImg"></img>
+                <div v-show="!!searchChar" class="char-selector" :style="`left: ${charRect.x}px; top: ${charRect.y}px; width: ${charRect.w}px; height: ${charRect.h}px`"></div>
+            </div>
+
+            <ui-input class="row" placeholder="i18n:text-mesh.font_info.search_char" @change="onSearchChar($event.target.Value)"></ui-input>
+            <div v-show="!!searchChar">
+                <ui-textarea readonly :value="curCharInfo" style="height:200px;white-space: pre-line;"></ui-textarea>
+            </div>
+        </ui-section>
+    </div>
+</div>

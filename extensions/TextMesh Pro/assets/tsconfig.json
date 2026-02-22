@@ -1,0 +1,33 @@
+{
+    "extends": "../../../temp/tsconfig.cocos.json",
+    "compilerOptions": {
+        "module": "AMD",
+        "target": "ES2017",
+        "strict": false,
+
+        // Setup the declaration generation so importers can reference modules under static/
+        "declaration": true,
+        "noEmit": false,
+        "emitDeclarationOnly": false,
+        "rootDir": "./",
+        "outDir": "./lib",
+        "outFile": "./lib/text-mesh.js",
+        "isolatedModules": false,
+        // "composite": true,
+
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "strictPropertyInitialization": false,
+        "types": [
+            "node",
+            "../../../temp/declarations/cc",
+        ],
+    },
+    "files": [
+        "./TextMesh/index.ts"
+    ],
+    "include": [
+        "dts",
+        "TextMesh",
+    ]
+}
