@@ -1,4 +1,4 @@
-import { _decorator, Component, Enum, UITransform, Size, Node, Vec2 } from 'cc';
+import { _decorator, Component, Enum, UITransform, Size, Node, Vec2, Widget } from 'cc';
 import { YileLayoutElement } from './YileLayoutElement';
 import { YileLayoutUtility } from './YileLayoutUtility';
 
@@ -84,9 +84,31 @@ export class YileLayout extends Component {
     }
 
     protected onLoad() {
+        // 監聽節點增減
         this.node.on(Node.EventType.CHILD_ADDED, this._onChildChanged, this);
         this.node.on(Node.EventType.CHILD_REMOVED, this._onChildChanged, this);
         this.node.on(Node.EventType.SIZE_CHANGED, this._doLayoutDirty, this);
+
+        // 【新增】監聽子節點順序變化 (當呼叫 setSiblingIndex 或在編輯器拖拽時觸發)
+        this.node.on(Node.EventType.SIBLING_ORDER_CHANGED, this._onChildOrderChanged, this);
+
+        this.forceUpdateUsefulChildren();
+    }
+
+    protected onDestroy() {
+        // 良好的開發習慣：銷毀時移除監聽，避免內存洩漏
+        if (this.node.isValid) {
+            this.node.off(Node.EventType.CHILD_ADDED, this._onChildChanged, this);
+            this.node.off(Node.EventType.CHILD_REMOVED, this._onChildChanged, this);
+            this.node.off(Node.EventType.SIBLING_ORDER_CHANGED, this._onChildOrderChanged, this);
+            this.node.off(Node.EventType.SIZE_CHANGED, this._doLayoutDirty, this);
+        }
+    }
+
+    /**
+     * 當子節點順序改變時觸發
+     */
+    private _onChildOrderChanged() {
         this.forceUpdateUsefulChildren();
     }
 
@@ -155,6 +177,19 @@ export class YileLayout extends Component {
         const isVert = this.type === LayoutType.VERTICAL;
         this._setChildrenAlongAxis(0, isVert, size);
         this._setChildrenAlongAxis(1, isVert, size);
+
+        this._updateAllWidgetsRecursively(this.node);
+    }
+
+    private _updateAllWidgetsRecursively(root: Node) {
+        // 獲取節點下所有的 Widget (包含孫物件)
+        const widgets = root.getComponentsInChildren(Widget);
+        for (const widget of widgets) {
+            if (widget.node === root) continue; // 跳過自身，只刷子孫
+            if (widget.enabled) {
+                widget.updateAlignment();
+            }
+        }
     }
 
     private _setChildrenAlongAxis(axis: number, isVertical: boolean, containerSize: Size) {

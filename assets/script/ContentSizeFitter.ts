@@ -1,11 +1,12 @@
 import { _decorator, Component, UITransform, Enum, Node } from 'cc';
 import { YileLayout } from './YileLayout';
 
-const { ccclass, property } = _decorator;
+const { ccclass, property, executeInEditMode } = _decorator;
 
 export enum FitMode { Unconstrained, MinSize, PreferredSize }
 
 @ccclass('ContentSizeFitter')
+@executeInEditMode
 export class ContentSizeFitter extends Component {
 
     @property({ type: Enum(FitMode) }) public horizontalFit: FitMode = FitMode.Unconstrained;
