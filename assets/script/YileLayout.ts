@@ -10,21 +10,19 @@ export enum ChildAlignment {
     LOWER_LEFT, LOWER_CENTER, LOWER_RIGHT
 }
 
-Enum(ChildAlignment);
 
 export enum LayoutType { HORIZONTAL, VERTICAL }
 
-Enum(LayoutType);
 
 @ccclass('YileLayout')
 @menu('Layout/YileLayout')
 @executeInEditMode
 export class YileLayout extends Component {
 
-    @property({ type: LayoutType, tooltip: '佈局方向' })
+    @property({ type: Enum(LayoutType), tooltip: '佈局方向' })
     public type: LayoutType = LayoutType.HORIZONTAL;
 
-    @property({ type: ChildAlignment, tooltip: '子節點對齊方式' })
+    @property({ type: Enum(ChildAlignment), tooltip: '子節點對齊方式' })
     public childAlignment: ChildAlignment = ChildAlignment.UPPER_LEFT;
 
     @property({ group: { name: 'Padding' } }) public paddingLeft: number = 0;
@@ -154,7 +152,14 @@ export class YileLayout extends Component {
 
     protected update() {
         if (this._layoutDirty) {
+            // 在 Play 模式下，有時需要確保子節點已經完成基本的 UITransform 更新
             this.forceUpdateLayout();
+
+            // 【關鍵】如果掛有 ContentSizeFitter，Layout 算完後要叫 Fitter 再刷一次
+            const fitter = this.getComponent('ContentSizeFitter') as any;
+            if (fitter) {
+                fitter._updateSize();
+            }
         }
     }
 

@@ -70,15 +70,25 @@ export class ContentSizeFitter extends Component {
         const fitting = (axis === 0 ? this.horizontalFit : this.verticalFit);
         if (fitting === FitMode.Unconstrained) return;
 
+        // 【新增】如果是 Play 模式，確保子節點的 Label 已經更新
+        this.node.children.forEach(child => {
+            // 針對原生 Label
+            const label = child.getComponent('cc.Label') as any;
+            if (label) label.updateRenderData(true);
+
+            // 針對你的 TextMeshLabel (假設它有類似的刷新接口)
+            const tmLabel = child.getComponent('TextMeshLabel') as any;
+            if (tmLabel && tmLabel.forceUpdateRender) tmLabel.forceUpdateRender();
+        });
+
         if (fitting === FitMode.PreferredSize) {
             const layout = this.getComponent(YileLayout);
             if (layout) {
-                // 從 Layout 獲取計算後的總理想尺寸
                 const pref = layout.getTotalPreferredSize(axis);
                 const padding = axis === 0 ? (layout.paddingLeft + layout.paddingRight) : (layout.paddingTop + layout.paddingBottom);
+                // 這裡如果是 0，代表 Layout 裡面的計算邏輯沒拿到子節點正確的 PreferredSize
                 this._setSize(axis, pref + padding);
             } else {
-                // 如果沒有 Layout，則使用傳統的 Bounds 計算
                 this._setSize(axis, this._calculateBoundsSize(axis));
             }
         }
