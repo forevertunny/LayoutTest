@@ -10,70 +10,93 @@ export enum ChildAlignment {
     LOWER_LEFT, LOWER_CENTER, LOWER_RIGHT
 }
 
-
 export enum LayoutType { HORIZONTAL, VERTICAL }
-
 
 @ccclass('YileLayout')
 @menu('Layout/YileLayout')
 @executeInEditMode
 export class YileLayout extends Component {
 
+    // --- 核心佈局屬性 ---
+
     @property({ type: Enum(LayoutType), tooltip: '佈局方向' })
-    public type: LayoutType = LayoutType.HORIZONTAL;
+    get type() { return this._type; }
+    set type(value: LayoutType) { if (this._type === value) return; this._type = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _type: LayoutType = LayoutType.HORIZONTAL;
 
     @property({ type: Enum(ChildAlignment), tooltip: '子節點對齊方式' })
-    public childAlignment: ChildAlignment = ChildAlignment.UPPER_LEFT;
+    get childAlignment() { return this._childAlignment; }
+    set childAlignment(value: ChildAlignment) { if (this._childAlignment === value) return; this._childAlignment = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _childAlignment: ChildAlignment = ChildAlignment.UPPER_LEFT;
 
-    @property({ group: { name: 'Padding' } }) public paddingLeft: number = 0;
-    @property({ group: { name: 'Padding' } }) public paddingRight: number = 0;
-    @property({ group: { name: 'Padding' } }) public paddingTop: number = 0;
-    @property({ group: { name: 'Padding' } }) public paddingBottom: number = 0;
-    @property({ tooltip: '子節點間距' }) public spacing: number = 0;
+    // --- Padding 屬性區 ---
+
+    @property({ group: { name: 'Padding' } })
+    get paddingLeft() { return this._paddingLeft; }
+    set paddingLeft(value: number) { this._paddingLeft = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _paddingLeft: number = 0;
+
+    @property({ group: { name: 'Padding' } })
+    get paddingRight() { return this._paddingRight; }
+    set paddingRight(value: number) { this._paddingRight = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _paddingRight: number = 0;
+
+    @property({ group: { name: 'Padding' } })
+    get paddingTop() { return this._paddingTop; }
+    set paddingTop(value: number) { this._paddingTop = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _paddingTop: number = 0;
+
+    @property({ group: { name: 'Padding' } })
+    get paddingBottom() { return this._paddingBottom; }
+    set paddingBottom(value: number) { this._paddingBottom = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _paddingBottom: number = 0;
+
+    @property({ tooltip: '子節點間距' })
+    get spacing() { return this._spacing; }
+    set spacing(value: number) { this._spacing = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _spacing: number = 0;
+
+    // --- 子節點控制項 ---
 
     @property({ group: "Child Controls" })
-    get childControlWidth() {
-        return this._childControlWidth;
-    }
-
-    set childControlWidth(value: boolean) {
-        this._childControlWidth = value;
-        if (value) this._recordDrivenAxis(0);
-        else this._clearDrivenAxis(0);
-        this._doLayoutDirty();
-    }
-
-    @property({ serializable: true })
-    private _childControlWidth: boolean = false;
+    get childControlWidth() { return this._childControlWidth; }
+    set childControlWidth(value: boolean) { this._childControlWidth = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _childControlWidth: boolean = false;
 
     @property({ group: "Child Controls" })
-    get childControlHeight() {
-        return this._childControlHeight;
-    }
+    get childControlHeight() { return this._childControlHeight; }
+    set childControlHeight(value: boolean) { this._childControlHeight = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _childControlHeight: boolean = false;
 
-    set childControlHeight(value: boolean) {
-        this._childControlHeight = value;
-        if (value) this._recordDrivenAxis(1);
-        else this._clearDrivenAxis(1);
-        this._doLayoutDirty();
-    }
+    @property({ group: "Force Expand" })
+    get childForceExpandWidth() { return this._childForceExpandWidth; }
+    set childForceExpandWidth(value: boolean) { this._childForceExpandWidth = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _childForceExpandWidth: boolean = false;
 
-    @property({ serializable: true })
-    private _childControlHeight: boolean = false;
+    @property({ group: "Force Expand" })
+    get childForceExpandHeight() { return this._childForceExpandHeight; }
+    set childForceExpandHeight(value: boolean) { this._childForceExpandHeight = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _childForceExpandHeight: boolean = false;
 
-    @property({ group: "Force Expand" }) public childForceExpandWidth: boolean = false;
-    @property({ group: "Force Expand" }) public childForceExpandHeight: boolean = false;
+    @property({ group: "Child Scale" })
+    get useChildScaleWidth() { return this._useChildScaleWidth; }
+    set useChildScaleWidth(value: boolean) { this._useChildScaleWidth = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _useChildScaleWidth: boolean = false;
 
-    @property({ group: "Child Scale" }) public useChildScaleWidth: boolean = false;
-    @property({ group: "Child Scale" }) public useChildScaleHeight: boolean = false;
+    @property({ group: "Child Scale" })
+    get useChildScaleHeight() { return this._useChildScaleHeight; }
+    set useChildScaleHeight(value: boolean) { this._useChildScaleHeight = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _useChildScaleHeight: boolean = false;
 
-    @property({ tooltip: '是否反向排列' }) public reverseArrangement: boolean = false;
+    @property({ tooltip: '是否反向排列' })
+    get reverseArrangement() { return this._reverseArrangement; }
+    set reverseArrangement(value: boolean) { this._reverseArrangement = value; this._doLayoutDirty(); }
+    @property({ serializable: true }) private _reverseArrangement: boolean = false;
+
+    // --- 私有變數與緩存 ---
 
     private _layoutDirty: boolean = false;
-    private _usefulLayoutObj: UITransform[] = [];
-    private _drivenSizes: Map<string, Vec2> = new Map();
-
-    // 儲存佈局後的理想總尺寸
+    private _items: { trans: UITransform, element: YileLayoutElement | null, widget: Widget | null }[] = [];
     private _totalPreferredWidth: number = 0;
     private _totalPreferredHeight: number = 0;
 
@@ -82,19 +105,14 @@ export class YileLayout extends Component {
     }
 
     protected onLoad() {
-        // 監聽節點增減
         this.node.on(Node.EventType.CHILD_ADDED, this._onChildChanged, this);
         this.node.on(Node.EventType.CHILD_REMOVED, this._onChildChanged, this);
         this.node.on(Node.EventType.SIZE_CHANGED, this._doLayoutDirty, this);
-
-        // 【新增】監聽子節點順序變化 (當呼叫 setSiblingIndex 或在編輯器拖拽時觸發)
         this.node.on(Node.EventType.SIBLING_ORDER_CHANGED, this._onChildOrderChanged, this);
-
         this.forceUpdateUsefulChildren();
     }
 
     protected onDestroy() {
-        // 良好的開發習慣：銷毀時移除監聽，避免內存洩漏
         if (this.node.isValid) {
             this.node.off(Node.EventType.CHILD_ADDED, this._onChildChanged, this);
             this.node.off(Node.EventType.CHILD_REMOVED, this._onChildChanged, this);
@@ -103,47 +121,15 @@ export class YileLayout extends Component {
         }
     }
 
-    /**
-     * 當子節點順序改變時觸發
-     */
-    private _onChildOrderChanged() {
-        this.forceUpdateUsefulChildren();
-    }
-
-    private _onChildChanged() {
-        if (this._childControlWidth) this._recordDrivenAxis(0);
-        if (this._childControlHeight) this._recordDrivenAxis(1);
-        this.forceUpdateUsefulChildren();
-    }
-
-    private _recordDrivenAxis(axis: number) {
-        for (const child of this.node.children) {
-            const trans = child.getComponent(UITransform);
-            if (!trans) continue;
-            if (!this._drivenSizes.has(child.uuid)) {
-                this._drivenSizes.set(child.uuid, new Vec2(trans.width, trans.height));
-            } else {
-                const saved = this._drivenSizes.get(child.uuid)!;
-                if (axis === 0) saved.x = trans.width;
-                else saved.y = trans.height;
-            }
-        }
-    }
-
-    private _clearDrivenAxis(axis: number) {
-        if (!this._childControlWidth && !this._childControlHeight) {
-            this._drivenSizes.clear();
-        }
-    }
+    private _onChildOrderChanged() { this.forceUpdateUsefulChildren(); }
+    private _onChildChanged() { this.forceUpdateUsefulChildren(); }
 
     public forceUpdateUsefulChildren() {
         this._updateUsefulChildren();
         this._doLayoutDirty();
     }
 
-    private _doLayoutDirty() {
-        this._layoutDirty = true;
-    }
+    private _doLayoutDirty() { this._layoutDirty = true; }
 
     public forceUpdateLayout() {
         this._doLayout();
@@ -152,25 +138,24 @@ export class YileLayout extends Component {
 
     protected update() {
         if (this._layoutDirty) {
-            // 在 Play 模式下，有時需要確保子節點已經完成基本的 UITransform 更新
             this.forceUpdateLayout();
-
-            // 【關鍵】如果掛有 ContentSizeFitter，Layout 算完後要叫 Fitter 再刷一次
             const fitter = this.getComponent('ContentSizeFitter') as any;
-            if (fitter) {
-                fitter._updateSize();
-            }
+            if (fitter) fitter._updateSize();
         }
     }
 
     private _updateUsefulChildren() {
-        this._usefulLayoutObj = [];
+        this._items = [];
         for (const child of this.node.children) {
             if (!child.activeInHierarchy) continue;
             const trans = child.getComponent(UITransform);
             const el = child.getComponent(YileLayoutElement);
             if (trans && (!el || !el.ignoreLayout)) {
-                this._usefulLayoutObj.push(trans);
+                this._items.push({
+                    trans: trans,
+                    element: el,
+                    widget: child.getComponent(Widget)
+                });
             }
         }
     }
@@ -180,21 +165,18 @@ export class YileLayout extends Component {
         if (!trans) return;
         const size = trans.contentSize.clone();
         const isVert = this.type === LayoutType.VERTICAL;
+
         this._setChildrenAlongAxis(0, isVert, size);
         this._setChildrenAlongAxis(1, isVert, size);
 
-        this._updateAllWidgetsRecursively(this.node);
-    }
-
-    private _updateAllWidgetsRecursively(root: Node) {
-        // 獲取節點下所有的 Widget (包含孫物件)
-        const widgets = root.getComponentsInChildren(Widget);
-        for (const widget of widgets) {
-            if (widget.node === root) continue; // 跳過自身，只刷子孫
-            if (widget.enabled) {
-                widget.updateAlignment();
+        // 利用緩存好的 Widget 直接刷新，避免 getComponent 開銷
+        for (const item of this._items) {
+            if (item.widget && item.widget.enabled) {
+                item.widget.updateAlignment();
             }
         }
+        // 通知深層子節點
+        this.node.emit('layout-finished');
     }
 
     private _setChildrenAlongAxis(axis: number, isVertical: boolean, containerSize: Size) {
@@ -202,11 +184,10 @@ export class YileLayout extends Component {
         const controlSize = axis === 0 ? this._childControlWidth : this._childControlHeight;
         const useScale = axis === 0 ? this.useChildScaleWidth : this.useChildScaleHeight;
         const forceExpand = axis === 0 ? this.childForceExpandWidth : this.childForceExpandHeight;
-        const alignmentOnAxis = this._getAlignmentOnAxis(axis);
+        const alignmentWeight = this._getAlignmentOnAxis(axis);
 
-        const children = this._usefulLayoutObj;
-        const childCount = children.length;
-        if (childCount === 0) return;
+        const items = this._items;
+        if (items.length === 0) return;
 
         const alongOtherAxis = (isVertical !== (axis === 1));
         const paddingCombined = axis === 0 ? (this.paddingLeft + this.paddingRight) : (this.paddingTop + this.paddingBottom);
@@ -214,7 +195,8 @@ export class YileLayout extends Component {
 
         if (alongOtherAxis) {
             let maxPref = 0;
-            for (const childTrans of children) {
+            for (const item of items) {
+                const childTrans = item.trans;
                 const scale = useScale ? Math.max(0.0001, Math.abs(axis === 0 ? childTrans.node.scale.x : childTrans.node.scale.y)) : 1.0;
                 if (controlSize) {
                     const min = YileLayoutUtility.getMinSize(childTrans, axis);
@@ -225,31 +207,28 @@ export class YileLayout extends Component {
                 maxPref = Math.max(maxPref, p);
 
                 const curSizeEff = (axis === 0 ? childTrans.width : childTrans.height) * scale;
-                const offset = this._getStartOffset(axis, curSizeEff, containerSize) + (innerSize - curSizeEff) * alignmentOnAxis;
+                const baseOffset = this._getStartOffset(axis, curSizeEff, containerSize);
+                const surplus = innerSize - curSizeEff;
+
+                // 修正：垂直方向（axis=1）向下為負
+                const offset = axis === 0 ? (baseOffset + surplus * alignmentWeight) : (baseOffset - surplus * alignmentWeight);
                 this._setChildAlongAxis(childTrans, axis, offset);
             }
-            if (axis === 0) this._totalPreferredWidth = maxPref;
-            else this._totalPreferredHeight = maxPref;
+            if (axis === 0) this._totalPreferredWidth = maxPref; else this._totalPreferredHeight = maxPref;
         } else {
             let totalMin = 0, totalPref = 0, totalFlex = 0;
-            const infos = children.map(child => {
+            const infos = items.map(item => {
+                const child = item.trans;
                 const scale = useScale ? Math.max(0.0001, Math.abs(axis === 0 ? child.node.scale.x : child.node.scale.y)) : 1.0;
-                let baseSize = axis === 0 ? child.width : child.height;
-                const driven = this._drivenSizes.get(child.node.uuid);
-                if (driven) baseSize = axis === 0 ? driven.x : driven.y;
-
                 const m = YileLayoutUtility.getMinSize(child, axis) * scale;
                 const p = YileLayoutUtility.getPreferredSize(child, axis) * scale;
                 const f = YileLayoutUtility.getFlexibleSize(child, axis, forceExpand);
-                totalMin += m;
-                totalPref += p;
-                totalFlex += f;
-                return { m, p, f, scale };
+                totalMin += m; totalPref += p; totalFlex += f;
+                return { m, p, f, scale, trans: child };
             });
 
-            const totalSpacing = (childCount - 1) * this.spacing;
-            if (axis === 0) this._totalPreferredWidth = totalPref + totalSpacing;
-            else this._totalPreferredHeight = totalPref + totalSpacing;
+            const totalSpacing = (items.length - 1) * this.spacing;
+            if (axis === 0) this._totalPreferredWidth = totalPref + totalSpacing; else this._totalPreferredHeight = totalPref + totalSpacing;
 
             const availSpace = size - paddingCombined - totalSpacing;
             let currentContentSize = totalPref;
@@ -257,8 +236,7 @@ export class YileLayout extends Component {
 
             if (availSpace < totalPref) {
                 currentContentSize = Math.max(totalMin, availSpace);
-                if (totalPref - totalMin > 0) minMaxLerp = (currentContentSize - totalMin) / (totalPref - totalMin);
-                else minMaxLerp = 0;
+                if (totalPref - totalMin > 0) minMaxLerp = (currentContentSize - totalMin) / (totalPref - totalMin); else minMaxLerp = 0;
             } else if (availSpace > totalPref && totalFlex > 0) {
                 currentContentSize = availSpace;
                 flexMult = (availSpace - totalPref) / totalFlex;
@@ -266,29 +244,30 @@ export class YileLayout extends Component {
 
             const surplus = availSpace - currentContentSize;
             let startOffset = this._getStartOffset(axis, currentContentSize, containerSize);
-            if (surplus > 0) {
-                startOffset += (axis === 0 ? surplus * alignmentOnAxis : -surplus * alignmentOnAxis);
-            }
-            let currentPos = startOffset;
 
+            // 修正：主軸對齊偏移
+            const alignOffset = surplus * alignmentWeight;
+            startOffset += (axis === 0 ? alignOffset : -alignOffset);
+
+            let currentPos = startOffset;
             for (let i = 0; i < infos.length; i++) {
-                const idx = this.reverseArrangement ? (childCount - 1 - i) : i;
+                const idx = this.reverseArrangement ? (infos.length - 1 - i) : i;
                 const info = infos[idx];
-                const childTrans = children[idx];
                 const finalEff = info.m + (info.p - info.m) * minMaxLerp + (info.f * flexMult);
 
                 if (controlSize) {
                     const newSize = finalEff / info.scale;
-                    if (axis === 0) childTrans.width = newSize; else childTrans.height = newSize;
+                    if (axis === 0) info.trans.width = newSize; else info.trans.height = newSize;
                 }
-                this._setChildAlongAxis(childTrans, axis, currentPos);
+                this._setChildAlongAxis(info.trans, axis, currentPos);
                 currentPos += axis === 0 ? (finalEff + this.spacing) : -(finalEff + this.spacing);
             }
         }
     }
 
     private _getAlignmentOnAxis(axis: number): number {
-        return ((axis === 0 ? (this.childAlignment % 3) : Math.floor(this.childAlignment / 3)) * 0.5);
+        if (axis === 0) return (this.childAlignment % 3) * 0.5;
+        return Math.floor(this.childAlignment / 3) * 0.5;
     }
 
     private _getStartOffset(axis: number, contentSize: number, containerSize: Size): number {
@@ -300,7 +279,8 @@ export class YileLayout extends Component {
     private _setChildAlongAxis(childTrans: UITransform, axis: number, pos: number) {
         const node = childTrans.node;
         const scaleVal = (axis === 0 ? (this.useChildScaleWidth ? node.scale.x : 1) : (this.useChildScaleHeight ? node.scale.y : 1));
-        if (axis === 0) node.setPosition(pos + childTrans.anchorX * childTrans.width * scaleVal, node.position.y);
-        else node.setPosition(node.position.x, pos - (1 - childTrans.anchorY) * childTrans.height * scaleVal);
+        const p = node.position;
+        if (axis === 0) node.setPosition(pos + childTrans.anchorX * childTrans.width * scaleVal, p.y);
+        else node.setPosition(p.x, pos - (1 - childTrans.anchorY) * childTrans.height * scaleVal);
     }
 }
