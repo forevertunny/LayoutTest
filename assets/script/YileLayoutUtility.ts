@@ -10,23 +10,25 @@ export class YileLayoutUtility {
      */
     public static getMinSize(trans: UITransform, axis: number): number {
         const el = trans.getComponent(YileLayoutElement);
-        if (!el) return 0;
+        if (!el || !el.enabled) return 0;
         if (axis === 0) return el.useMinWidth ? el.minWidth : 0;
         return el.useMinHeight ? el.minHeight : 0;
     }
 
     /**
      * 獲取佈局元素的理想尺寸
+     * @param defaultSize 預設尺寸 (當沒有 Element 時使用的參考值，通常傳入記憶的原始尺寸)
      */
-    public static getPreferredSize(trans: UITransform, axis: number): number {
+    public static getPreferredSize(trans: UITransform, axis: number, defaultSize?: number): number {
         const el = trans.getComponent(YileLayoutElement);
         const min = this.getMinSize(trans, axis);
         let pref = 0;
 
+        // 優先順序：Element 設定 > 外部傳入的預設值 (記憶值) > 當前節點尺寸
         if (axis === 0) {
-            pref = (el && el.usePreferredWidth) ? el.preferredWidth : trans.width;
+            pref = (el && el.enabled && el.usePreferredWidth) ? el.preferredWidth : (defaultSize !== undefined ? defaultSize : trans.width);
         } else {
-            pref = (el && el.usePreferredHeight) ? el.preferredHeight : trans.height;
+            pref = (el && el.enabled && el.usePreferredHeight) ? el.preferredHeight : (defaultSize !== undefined ? defaultSize : trans.height);
         }
 
         // 根據 Unity 邏輯：Preferred 寬度是 Min 與 Preferred 的最大值
@@ -40,7 +42,7 @@ export class YileLayoutUtility {
         const el = trans.getComponent(YileLayoutElement);
         let flex = 0;
 
-        if (el) {
+        if (el && el.enabled) {
             flex = axis === 0 ? (el.useFlexibleWidth ? el.flexibleWidth : 0) : (el.useFlexibleHeight ? el.flexibleHeight : 0);
         }
 

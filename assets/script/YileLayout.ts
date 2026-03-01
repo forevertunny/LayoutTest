@@ -30,7 +30,6 @@ export class YileLayout extends Component {
     @property({ serializable: true }) private _childAlignment: ChildAlignment = ChildAlignment.UPPER_LEFT;
 
     // --- Padding 屬性區 ---
-
     @property({ group: { name: 'Padding' } })
     get paddingLeft() { return this._paddingLeft; }
     set paddingLeft(value: number) { this._paddingLeft = value; this._doLayoutDirty(); }
@@ -56,16 +55,28 @@ export class YileLayout extends Component {
     set spacing(value: number) { this._spacing = value; this._doLayoutDirty(); }
     @property({ serializable: true }) private _spacing: number = 0;
 
-    // --- 子節點控制項 ---
+    // --- 子節點控制項 (強化記憶與復原) ---
 
     @property({ group: "Child Controls" })
     get childControlWidth() { return this._childControlWidth; }
-    set childControlWidth(value: boolean) { this._childControlWidth = value; this._doLayoutDirty(); }
+    set childControlWidth(value: boolean) {
+        if (this._childControlWidth === value) return;
+        if (value) this._recordDrivenAxis(0);
+        else this._restoreDrivenAxis(0);
+        this._childControlWidth = value;
+        this._doLayoutDirty();
+    }
     @property({ serializable: true }) private _childControlWidth: boolean = false;
 
     @property({ group: "Child Controls" })
     get childControlHeight() { return this._childControlHeight; }
-    set childControlHeight(value: boolean) { this._childControlHeight = value; this._doLayoutDirty(); }
+    set childControlHeight(value: boolean) {
+        if (this._childControlHeight === value) return;
+        if (value) this._recordDrivenAxis(1);
+        else this._restoreDrivenAxis(1);
+        this._childControlHeight = value;
+        this._doLayoutDirty();
+    }
     @property({ serializable: true }) private _childControlHeight: boolean = false;
 
     @property({ group: "Force Expand" })
@@ -93,10 +104,10 @@ export class YileLayout extends Component {
     set reverseArrangement(value: boolean) { this._reverseArrangement = value; this._doLayoutDirty(); }
     @property({ serializable: true }) private _reverseArrangement: boolean = false;
 
-    // --- 私有變數與緩存 ---
-
     private _layoutDirty: boolean = false;
     private _items: { trans: UITransform, element: YileLayoutElement | null, widget: Widget | null }[] = [];
+    private _drivenSizes: Map<string, Vec2> = new Map();
+
     private _totalPreferredWidth: number = 0;
     private _totalPreferredHeight: number = 0;
 
@@ -105,8 +116,8 @@ export class YileLayout extends Component {
     }
 
     protected onLoad() {
-        this.node.on(Node.EventType.CHILD_ADDED, this._onChildChanged, this);
-        this.node.on(Node.EventType.CHILD_REMOVED, this._onChildChanged, this);
+        this.node.on(Node.EventType.CHILD_ADDED, this._onChildAdded, this);
+        this.node.on(Node.EventType.CHILD_REMOVED, this._onChildRemoved, this);
         this.node.on(Node.EventType.SIZE_CHANGED, this._doLayoutDirty, this);
         this.node.on(Node.EventType.SIBLING_ORDER_CHANGED, this._onChildOrderChanged, this);
         this.forceUpdateUsefulChildren();
@@ -114,15 +125,49 @@ export class YileLayout extends Component {
 
     protected onDestroy() {
         if (this.node.isValid) {
-            this.node.off(Node.EventType.CHILD_ADDED, this._onChildChanged, this);
-            this.node.off(Node.EventType.CHILD_REMOVED, this._onChildChanged, this);
+            this.node.off(Node.EventType.CHILD_ADDED, this._onChildAdded, this);
+            this.node.off(Node.EventType.CHILD_REMOVED, this._onChildRemoved, this);
             this.node.off(Node.EventType.SIBLING_ORDER_CHANGED, this._onChildOrderChanged, this);
             this.node.off(Node.EventType.SIZE_CHANGED, this._doLayoutDirty, this);
         }
     }
 
     private _onChildOrderChanged() { this.forceUpdateUsefulChildren(); }
-    private _onChildChanged() { this.forceUpdateUsefulChildren(); }
+
+    private _onChildAdded(child: Node) {
+        const trans = child.getComponent(UITransform);
+        if (trans && (this._childControlWidth || this._childControlHeight)) {
+            this._drivenSizes.set(child.uuid, new Vec2(trans.width, trans.height));
+        }
+        this.forceUpdateUsefulChildren();
+    }
+
+    private _onChildRemoved(child: Node) {
+        this._drivenSizes.delete(child.uuid);
+        this.forceUpdateUsefulChildren();
+    }
+
+    private _recordDrivenAxis(axis: number) {
+        for (const child of this.node.children) {
+            const trans = child.getComponent(UITransform);
+            if (!trans) continue;
+            if (!this._drivenSizes.has(child.uuid)) {
+                this._drivenSizes.set(child.uuid, new Vec2(trans.width, trans.height));
+            }
+        }
+    }
+
+    private _restoreDrivenAxis(axis: number) {
+        for (const child of this.node.children) {
+            const trans = child.getComponent(UITransform);
+            const saved = this._drivenSizes.get(child.uuid);
+            if (!trans || !saved) continue;
+            if (axis === 0) trans.width = saved.x;
+            else trans.height = saved.y;
+        }
+        if (axis === 0 && !this._childControlHeight) this._drivenSizes.clear();
+        if (axis === 1 && !this._childControlWidth) this._drivenSizes.clear();
+    }
 
     public forceUpdateUsefulChildren() {
         this._updateUsefulChildren();
@@ -150,10 +195,11 @@ export class YileLayout extends Component {
             if (!child.activeInHierarchy) continue;
             const trans = child.getComponent(UITransform);
             const el = child.getComponent(YileLayoutElement);
-            if (trans && (!el || !el.ignoreLayout)) {
+            const isIgnored = el && el.enabled && el.ignoreLayout;
+            if (trans && !isIgnored) {
                 this._items.push({
                     trans: trans,
-                    element: el,
+                    element: (el && el.enabled) ? el : null,
                     widget: child.getComponent(Widget)
                 });
             }
@@ -165,17 +211,12 @@ export class YileLayout extends Component {
         if (!trans) return;
         const size = trans.contentSize.clone();
         const isVert = this.type === LayoutType.VERTICAL;
-
         this._setChildrenAlongAxis(0, isVert, size);
         this._setChildrenAlongAxis(1, isVert, size);
 
-        // 利用緩存好的 Widget 直接刷新，避免 getComponent 開銷
         for (const item of this._items) {
-            if (item.widget && item.widget.enabled) {
-                item.widget.updateAlignment();
-            }
+            if (item.widget && item.widget.enabled) item.widget.updateAlignment();
         }
-        // 通知深層子節點
         this.node.emit('layout-finished');
     }
 
@@ -198,19 +239,25 @@ export class YileLayout extends Component {
             for (const item of items) {
                 const childTrans = item.trans;
                 const scale = useScale ? Math.max(0.0001, Math.abs(axis === 0 ? childTrans.node.scale.x : childTrans.node.scale.y)) : 1.0;
+
+                // 取得記憶值作為基準
+                const driven = this._drivenSizes.get(childTrans.node.uuid);
+                let baseSize = axis === 0 ? childTrans.width : childTrans.height;
+                if (driven) baseSize = axis === 0 ? driven.x : driven.y;
+
                 if (controlSize) {
                     const min = YileLayoutUtility.getMinSize(childTrans, axis);
                     const targetSize = Math.max(min, innerSize / scale);
                     if (axis === 0) childTrans.width = targetSize; else childTrans.height = targetSize;
                 }
-                const p = YileLayoutUtility.getPreferredSize(childTrans, axis) * scale;
+
+                // 交叉軸計算
+                const p = YileLayoutUtility.getPreferredSize(childTrans, axis, baseSize) * scale;
                 maxPref = Math.max(maxPref, p);
 
                 const curSizeEff = (axis === 0 ? childTrans.width : childTrans.height) * scale;
                 const baseOffset = this._getStartOffset(axis, curSizeEff, containerSize);
                 const surplus = innerSize - curSizeEff;
-
-                // 修正：垂直方向（axis=1）向下為負
                 const offset = axis === 0 ? (baseOffset + surplus * alignmentWeight) : (baseOffset - surplus * alignmentWeight);
                 this._setChildAlongAxis(childTrans, axis, offset);
             }
@@ -220,8 +267,14 @@ export class YileLayout extends Component {
             const infos = items.map(item => {
                 const child = item.trans;
                 const scale = useScale ? Math.max(0.0001, Math.abs(axis === 0 ? child.node.scale.x : child.node.scale.y)) : 1.0;
+
+                // 記憶值檢索
+                const driven = this._drivenSizes.get(child.node.uuid);
+                let baseSize = axis === 0 ? child.width : child.height;
+                if (driven) baseSize = axis === 0 ? driven.x : driven.y;
+
                 const m = YileLayoutUtility.getMinSize(child, axis) * scale;
-                const p = YileLayoutUtility.getPreferredSize(child, axis) * scale;
+                const p = YileLayoutUtility.getPreferredSize(child, axis, baseSize) * scale;
                 const f = YileLayoutUtility.getFlexibleSize(child, axis, forceExpand);
                 totalMin += m; totalPref += p; totalFlex += f;
                 return { m, p, f, scale, trans: child };
@@ -244,8 +297,6 @@ export class YileLayout extends Component {
 
             const surplus = availSpace - currentContentSize;
             let startOffset = this._getStartOffset(axis, currentContentSize, containerSize);
-
-            // 修正：主軸對齊偏移
             const alignOffset = surplus * alignmentWeight;
             startOffset += (axis === 0 ? alignOffset : -alignOffset);
 
